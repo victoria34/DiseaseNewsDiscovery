@@ -1,0 +1,49 @@
+<nav class="navbar navbar-default" style="background: -webkit-linear-gradient(top,#fbe8bc 3%,#f6d075 16%,#f1b82d 75%); border: solid 1px #f1b82d; color: #222 !important; text-shadow: 0 1px 1px #fcf1d4;">
+ 	<div class="container-fluid">
+ 		<div class="row">
+ 			<div class="col-sm-3 col-md-3">
+ 				<div class="navbar-header">
+ 					<a class="navbar-brand" href="datasource.html" style="display: inline-block;">
+ 						<span class="mu-logo"></span>
+ 						<span class="site-name">Disease News Discovery</span>
+ 					</a>
+ 				</div>
+  			</div>
+
+ 			<div class="col-sm-9 col-md-9">
+ 				<ul class="nav navbar-nav"> 
+ 					<li><a href="datasource.html">Data Source</a></li> 
+ 					<li><a href="comparison.html">Comparison</a></li>
+ 					<li><a href="intersection.html">Intersection</a></li>
+ 					<li class="dropdown">
+ 						<a class="dropdown-toggle" data-toggle="dropdown" href="#">
+ 							Similarity Network<span class="caret"></span>
+ 						</a>
+ 						<ul class="dropdown-menu">
+ 							<li><a class="tabs" href="network.html">Single Disease Similarity Network</a></li>
+ 							<li><a class="tabs" href="pairNetwork.html">Disease Pair Similarity Network</a></li>
+ 						</ul>
+ 					</li>
+ 					<li><a href="wordcloud.html">Word Cloud</a></li>
+ 				</ul>
+ 			</div>
+ 		</div>
+ 	</div>
+</nav>
+
+<script type="text/javascript">
+	//check browser type
+	var safari = false;
+	var chrome = false;
+	var firefox = false;
+
+	var ua = navigator.userAgent.toLowerCase(); 
+	if (ua.indexOf('chrome') > -1) {
+		chrome = true; // Chrome
+	} else if (ua.indexOf('safari') > -1) {
+		safari = true; // Safari
+	} else if (ua.indexOf('firefox') > -1) {
+		firefox = true; // Firefox
+	}
+	
+</script>>

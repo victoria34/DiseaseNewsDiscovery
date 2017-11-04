@@ -1,0 +1,383 @@
+  <!DOCTYPE html>
+  <html>
+  <meta charset="utf-8">
+  <head>
+  	<title>Intersection</title>
+  	<link rel="icon" href="images/mu-logo-32-stroked.png"/>
+  	<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+  	<link rel="stylesheet" type="text/css" href="css/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+
+    <script type="text/javascript" src="js/jquery-1.12.4.min.js"></script>
+    <script type="text/javascript" src="js/jquery.csv.js"></script>
+    <script type="text/javascript" src="js/saveSvgAsPng.js"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/d3.v4.min.js"></script>
+ 	<script type="text/javascript" src="js/venn.js"></script>
+</head>
+
+<body>
+	<div class="header"></div>
+	<div class="content">
+		<div class="container-fluid">
+	      	<div class="row">
+				<div class="col-sm-12 col-md-7">	
+					<div class="intersection-graph">	
+						<div id="data-checkbox-inter">
+							<label class="checkbox-inline"><input type="checkbox" class="datacheck" id="1" value="Aljazeera" >Aljazeera</label>
+							<label class="checkbox-inline"><input type="checkbox" class="datacheck" id="2" value="BBC" >BBC</label>
+							<label class="checkbox-inline"><input type="checkbox" class="datacheck" id="3" value="Beast">Beast</label>
+							<label class="checkbox-inline"><input type="checkbox" class="datacheck" id="4" value="CNN" >CNN</label>
+							<label class="checkbox-inline"><input type="checkbox" class="datacheck" id="5" value="Fox" >Fox</label>
+							<label class="checkbox-inline"><input type="checkbox" class="datacheck" id="6" value="Reuters" >Reuters</label>
+							<label class="checkbox-inline"><input type="checkbox" class="datacheck" id="7" value="Telegraph" >Telegraph</label>
+							<br/>
+							<span id="warning" style="color:red"></span>
+						</div>
+						
+						<div id="venn">
+							<div class="download-img-div">
+			                    <button type="button" class="download-img-button" onclick="svgToPng('venn')">
+			                      <i class="fa fa-picture-o" title="Download Picture" aria-hidden="true"></i>
+			                    </button>
+			                </div>
+						</div>
+					</div>
+						
+				</div> 
+				
+	        	<div class="col-sm-12 col-md-5">
+			 		<div class="container-fluid" style="width: auto;">
+			 			<div class="row">
+			 				<div class="col-sm-12 col-md-12">
+			 					<div class="input-group stylish-input-group" id="intersection-search">
+				                  <input type="text" class="form-control" id="intersection-search-input" placeholder="Search" >
+				                  <span class="input-group-addon">
+				                    <button type="submit">
+				                       <i class="fa fa-search" aria-hidden="true"></i>
+				                    </button>  
+				                  </span>
+				                </div>
+			 				</div>
+			 				
+			 			</div>
+
+			 	      	<div class="row">
+							
+							<div class="col-sm-6 col-md-7">
+								<h5><span id="set_name1"></span></h5>
+			  	  			 	<div class="intersection-disease-list" >  
+			    	  			  	<select class="intersection-select" id="intersection1"></select>
+			  	  				</div>
+							</div>
+							
+							<div class="col-sm-6 col-md-5">
+								<h5><span id="set_name2"></span></h5>
+			  	  			 	<div class="intersection-disease-list">  
+			    	  			  	<select class="intersection-select" id="intersection2"></select>
+			  	  				</div>
+							</div>
+							
+	        			</div> 
+						
+						<br />
+						
+			 	      	<div class="row">
+							
+							<div class="col-sm-6 col-md-7">
+		    	  			  	<h5><span id="set_name3"></span></h5>
+			  	  			 	<div class="intersection-disease-list">  
+			    	  			  	<select id="intersection3" class="intersection-select"></select>
+			  	  				</div>
+							</div>
+							
+							<div class="col-sm-6 col-md-5">
+		    	  			  	<h5><span id="set_name4"></span></h5>
+			  	  			 	<div class="intersection-disease-list">  
+			    	  			  	<select id="intersection4" class="intersection-select"></select>
+			  	  				</div>
+							</div>
+							
+	        			</div>
+				
+					</div>
+				</div>
+				
+			</div>
+		</div>
+	</div>
+</body>
+
+<script type="text/javascript" >
+$(document).ready(function(){
+	$(".header").load("header.html");
+	$('.datacheck').click(function(){ 
+			$('#intersection-search-input').val('');
+		   var count = 0;
+		   var dataSources = [];
+	   	   $('.datacheck').each(function(){
+		   	  	if(this.checked == true){
+		   	   	 	count++;
+					if (count>3){
+						document.getElementById("warning").innerHTML="Please pick at most 3 data sources!";
+						console.log("At most 3 data sources!");
+						return;
+					}
+					else{
+						document.getElementById("warning").innerHTML="";
+					}
+					dataSources.push(this.value);
+				}
+		   }); 
+		   
+		   var sets;
+		   $('#intersection1').empty();
+		   if(count == 1){
+			   sets=[];
+			   var url1 = "synData/"+dataSources[0]+"DiseaseNormalizedDataSyn.csv";
+			   
+		   	   var array1 = getCSV(url1);
+			   
+			   sets = [{sets:[dataSources[0]], size: array1[0].length-1}];
+			   
+			   $('#set_name1').empty();
+			   $('#set_name2').empty();
+			   $('#set_name3').empty();
+			   $('#set_name4').empty();
+			   $('#intersection1').empty();
+			   $('#intersection2').empty();
+			   $('#intersection3').empty();
+			   $('#intersection4').empty();
+			   document.getElementById("intersection1").parentNode.style.display = 'none';
+			   document.getElementById("intersection2").parentNode.style.display = 'none';
+			   document.getElementById("intersection3").parentNode.style.display = 'none';
+			   document.getElementById("intersection4").parentNode.style.display = 'none';
+		   }
+		   else if(count == 2){
+			   sets=[];
+			   var url1 = "synData/"+dataSources[0]+"DiseaseNormalizedDataSyn.csv";
+			   var url2 = "synData/"+dataSources[1]+"DiseaseNormalizedDataSyn.csv"; 
+			   
+		   	   var array1 = getCSV(url1);
+			   var array2 = getCSV(url2);
+			   
+			   var intersection = findIntersection(array1[0],array2[0]);
+			   
+			   sets = [
+				   {sets:[dataSources[0]], size: array1[0].length-1},
+				   {sets:[dataSources[1]], size: array2[0].length-1},
+				   {sets:[dataSources[0],dataSources[1]], size: intersection.length, label: dataSources[0]+" ∩ "+dataSources[1]}
+			   ];
+			   
+			   var p = document.getElementById("intersection1");
+			   p.parentNode.style.display = 'block';
+			   document.getElementById("set_name1").innerHTML = dataSources[0] + " ∩ " + dataSources[1] +" : "+intersection.length + "<br />";
+			   p.size = intersection.length;
+			   $.each(intersection, function (i, item) {
+				    $('#intersection1').append($('<option>', { 
+				        value: i + 1,
+				        text : item 
+				    }));
+				});
+			   
+			   $('#set_name2').empty();
+			   $('#set_name3').empty();
+			   $('#set_name4').empty();
+			   $('#intersection2').empty();
+			   $('#intersection3').empty();
+			   $('#intersection4').empty();
+			   document.getElementById("intersection2").parentNode.style.display = 'none';
+			   document.getElementById("intersection3").parentNode.style.display = 'none';
+			   document.getElementById("intersection4").parentNode.style.display = 'none';
+		   }
+		   else if(count ==3){
+			   sets=[];
+			   var url1 = "synData/"+dataSources[0]+"DiseaseNormalizedDataSyn.csv";
+			   var url2 = "synData/"+dataSources[1]+"DiseaseNormalizedDataSyn.csv"; 
+			   var url3 = "synData/"+dataSources[2]+"DiseaseNormalizedDataSyn.csv";
+			   
+		   	   var array1 = getCSV(url1);
+			   var array2 = getCSV(url2);
+			   var array3 = getCSV(url3);
+			   
+			   var intersection12 = findIntersection(array1[0],array2[0]);
+			   var intersection23 = findIntersection(array2[0],array3[0]);
+			   var intersection31 = findIntersection(array3[0],array1[0]);
+			   var intersection123 = findIntersection(array3[0],intersection12);
+			   
+			   sets = [
+				   {sets:[dataSources[0]], size: array1[0].length-1},
+				   {sets:[dataSources[1]], size: array2[0].length-1},
+				   {sets:[dataSources[2]], size: array3[0].length-1},
+				   {sets:[dataSources[0],dataSources[1]], size: intersection12.length, label: dataSources[0]+" ∩ "+dataSources[1]},
+				   {sets:[dataSources[1],dataSources[2]], size: intersection23.length, label: dataSources[1]+" ∩ "+dataSources[2]},
+				   {sets:[dataSources[2],dataSources[0]], size: intersection31.length, label: dataSources[2]+" ∩ "+dataSources[0]},
+				   {sets:[dataSources[0],dataSources[1],dataSources[2]], size: intersection123.length, label: dataSources[0]+" ∩ "+dataSources[1]+" ∩ "+dataSources[2]}
+			   ];
+			   
+			   var p1 = document.getElementById("intersection1");
+			   p1.parentNode.style.display = 'block';
+			   document.getElementById("set_name1").innerHTML = dataSources[0]+" ∩ "+dataSources[1]+" ∩ "+dataSources[2]+" : "+intersection123.length+"<br />";
+			   p1.size = intersection123.length;
+			   $.each(intersection123, function (i, item) {
+				    $('#intersection1').append($('<option>', { 
+				        value: i + 1,
+				        text : item 
+				    }));
+				});
+			   
+			   var p2 = document.getElementById("intersection2");
+			   p2.parentNode.style.display = 'block';
+			   document.getElementById("set_name2").innerHTML = dataSources[0]+" ∩ "+dataSources[1]+" : "+intersection12.length+"<br />";
+			   p2.size = intersection12.length;
+			   $.each(intersection12, function (i, item) {
+				    $('#intersection2').append($('<option>', { 
+				        value: i + 1,
+				        text : item 
+				    }));
+				});
+			   
+			   var p3 = document.getElementById("intersection3");
+			   p3.parentNode.style.display = 'block';
+			   document.getElementById("set_name3").innerHTML = dataSources[1]+" ∩ "+dataSources[2]+" : "+intersection23.length+"<br />";
+			   p3.size = intersection23.length;
+			   $.each(intersection23, function (i, item) {
+				    $('#intersection3').append($('<option>', { 
+				        value: i + 1,
+				        text : item 
+				    }));
+				});
+			   
+			   var p4 = document.getElementById("intersection4");
+			   p4.parentNode.style.display = 'block';
+			   document.getElementById("set_name4").innerHTML = dataSources[2]+" ∩ "+dataSources[0]+" : "+intersection31.length+"<br />";
+			   p4.size = intersection31.length;
+			   $.each(intersection31, function (i, item) {
+				    $('#intersection4').append($('<option>', { 
+				        value: i + 1,
+				        text : item 
+				    }));
+				});
+			   			   
+		   }
+		   
+		   drawVenn(sets);
+	   }); 
+});
+
+$('#intersection-search-input').on('keyup', function () {
+    searchDisease();
+});
+
+function searchDisease() {
+  // Declare variables
+  var input, filter, selects;
+  input = document.getElementById('intersection-search-input');
+  filter = input.value.toString();
+  selects = document.getElementsByClassName('intersection-select');
+
+  $.each(selects, function(i, select) {
+  	var options = select.getElementsByTagName('option');
+    var option;
+  	// Loop through all list items, and hide those who don't match the search query
+	  for (var i = 0; i < options.length; i++) {
+	      option = options[i];
+	      if (option.text.search(filter) < 0) {
+	        if(safari) {
+	      		if($(option).parent().is('span')){
+	      			$(option).parent().css('display','none');
+	      		} else {
+	      			$(option).wrap('<span style="display:none;"></span>');
+	      		}
+	      		
+	      	} else {
+	      		option.style.display = "none";
+	      	}
+	      } else {
+	        if(safari) {
+	      		if($(option).parent().is('span')){
+	      			$(option).unwrap();
+	      		} 
+	      	} else {
+	      		option.style.display = "";
+	      	}
+	      }
+	  }
+
+  });
+}
+
+function svgToPng(element) {
+   	saveSvgAsPng(d3.select('#'+element).select("svg").node(), 'venn.png');
+}
+
+function getCSV(url){
+	var arrayData;
+	
+	$.ajax({    
+	        type:"GET",
+	        url:url,    
+	        async: false,//set async to false, otherwise it will return "undefined"
+	        success:function(csvString){ 
+	        	// transform the CSV string into a 2-dimensional array
+				arrayData = $.csv.toArrays(csvString, {onParseValue: $.csv.hooks.castToScalar});
+			}
+	});
+
+	return arrayData;
+}
+
+function getTextFile(url){
+	var arrayData;
+	
+	$.ajax({    
+	        type:"GET",
+	        url:url,    
+	        async: false,//set async to false, otherwise it will return "undefined"
+	        success:function(data){ 
+				arrayData = data.split(",");
+			}
+	});
+
+	return arrayData;
+}
+
+function drawVenn(sets){
+	var chart = venn.VennDiagram();
+	chart.wrap(false) 
+	     .width(600)
+	     .height(600);
+	var div = d3.select("#venn")
+				.datum(sets)
+				.call(chart);
+	div.selectAll("text")
+	   .style("fill", "white");
+	div.selectAll(".venn-circle path")
+	   .style("fill-opacity", .6)
+	   .style("fill",function() {
+	    return "hsl(" + Math.random() * 500 + ",100%,50%)";
+	});
+}
+
+function findIntersection(a,b){
+	var intersection = [];
+	var i,j;
+	for(i=1;i<a.length;i++){
+		for(j=1;j<b.length;j++){
+			if(a[i] == b[j]){
+				intersection.push(a[i]);
+			}
+		}
+	}
+	intersection.sort(function(a, b) {
+  		if(a < b) return -1;
+  		if(a > b) return 1;
+  		return 0;
+   	});
+	return intersection;
+}
+	  
+	   
+
+</script>
+</html>

@@ -1,0 +1,423 @@
+  <!DOCTYPE html>
+  <html>
+  <meta charset="utf-8">
+  <head>
+    <title>Data Source</title>
+    <link rel="icon" href="images/mu-logo-32-stroked.png"/>
+  	<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+  	<link rel="stylesheet" type="text/css" href="css/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="stylesheet" type="text/css" href="css/jquery.json-viewer.css">
+
+    <script type="text/javascript" src="js/loader.js"></script>
+    <script type="text/javascript" src="js/jsapi.js"></script>
+    <script type="text/javascript" src="js/jquery-1.12.4.min.js"></script>
+    <script type="text/javascript" src="js/jquery.csv.js"></script>
+    <script type="text/javascript" src="js/underscore.js"></script>
+    <script type="text/javascript" src="js/saveSvgAsPng.js"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/d3.v4.min.js"></script>
+    <script type="text/javascript" src="js/jquery.json-viewer.js"></script>
+  </head>
+
+  <body>
+  	<div class="header"></div>
+  	<div class="content">
+  		<div class="container-fluid">
+  			<div class="row">
+  				<div class="col-sm-3 col-md-3">
+  					<div class="left-sidebar">  
+  						<p class="hint">Select disease (press Ctrl to select multiple):</p>
+  						<div class="wrapper">
+                <div class="input-group stylish-input-group" id="datasource-search">
+                  <input type="text" class="form-control" id="datasource-search-input" placeholder="Search" >
+                  <span class="input-group-addon">
+                    <button type="submit">
+                       <i class="fa fa-search" aria-hidden="true"></i>
+                    </button>  
+                  </span>
+                </div>
+    						<select id="disease-select-list" size="20" multiple></select>
+    					</div>
+  					</div>
+  				</div>			
+
+  				<div class="col-sm-9 col-md-9">				
+  					<div class="data-source">
+  						<button type="button" class="btn" id="Aljazeera">Aljazeera</button>
+  						<button type="button" class="btn" id="BBC">BBC</button>
+  						<button type="button" class="btn" id="Beast">Beast</button>
+  						<button type="button" class="btn" id="CNN">CNN</button>
+  						<button type="button" class="btn" id="Fox">Fox</button>
+  						<button type="button" class="btn" id="Reuters">Reuters</button>
+  						<button type="button" class="btn" id="Telegraph">Telegraph</button>
+  					</div>
+
+            <div class="datasource-radio">
+              <label class="radio-inline">
+                <input type="radio" name="view" id="chart" checked>Chart View 
+                <i class="fa fa-line-chart" aria-hidden="true"></i>
+              </label>
+              <label class="radio-inline">
+                <input type="radio" name="view" id="table">Table View
+                <i class="fa fa-table" aria-hidden="true"></i>
+              </label>
+            </div>
+
+  					<div class="graph" id="chart-div">
+  						<div class="chartWithOverlay">
+  							<div class="chart" id="normalized-chart"></div>
+  							<div class="overlay">
+                  <div class="download-img-div">
+                    <button type="button" class="download-img-button" id="download-normalized-chart">
+                      <i class="fa fa-picture-o" title="Download Picture" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="chartWithOverlay">
+                <div class="chart" id="count-chart"></div>
+                <div class="overlay">
+                  <div class="download-img-div">
+                    <button type="button" class="download-img-button" id="download-count-chart">
+                      <i class="fa fa-picture-o" title="Download Picture" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="graph" id="table-div">
+              <div id="frequency-table" style="height: 350px;"></div>
+              <div id="count-table" style="height: 350px;"></div>
+            </div>
+
+              <div class="container-fluid" id="datasource-json-container">
+                <div class="row" style="max-width: 1050px;">
+                  <div class="col-sm-6 col-md-6">
+                    <div class="json-title-download-div" id="frequency-json-div">
+                      <span class="json-title-span">
+                        <h4>Frequency Json Data</h4>
+                      </span>
+                      <div class="download-data-div">
+                        <button type="button" class="download-data-button" id="download-normalized-data">
+                          <a><i class="fa fa-download" title="Download Data" aria-hidden="true"></i></a>
+                        </button>
+                      </div>
+                    </div>
+                    <pre class="json-renderer" id="frequency-json"></pre>
+                  </div>
+                  <div class="col-sm-6 col-md-6">
+                    <div class="json-title-download-div" id="count-json-div"> 
+                      <span class="json-title-span">
+                        <h4>Count Json Data</h4>
+                      </span>
+                      <div class="download-data-div">
+                        <button type="button" class="download-data-button" id="download-normalized-data">
+                          <a><i class="fa fa-download" title="Download Data" aria-hidden="true"></i></a>
+                        </button>
+                      </div>
+                    </div>
+                    <pre class="json-renderer" id="count-json"></pre>
+                  </div>
+                </div>
+              </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+<script type="text/javascript"> 
+// load the visualization library from Google and set a listener
+google.load("visualization", "1", {packages:["corechart"]});
+// Load the Visualization API and the piechart package.
+google.load('visualization', '1.0', {'packages':['table']});
+
+$(document).ready(function(){
+    $(".header").load("header.html");
+    var tab;
+
+    google.setOnLoadCallback(getDataSource);
+});
+
+$('#datasource-search-input').on('keyup', function () {
+    searchDisease();
+});
+
+$('#download-normalized-chart').on('click', function () {
+    svgToPng('normalized-chart');
+});
+
+$('#download-count-chart').on('click', function () {
+    svgToPng('count-chart');
+});
+
+$('.download-data-button').click(function(){
+      if (firefox) {
+        var link = document.createElement("a");
+
+          if (link.download !== undefined) { // feature detection
+            // Browsers that support HTML5 download attribute
+            var filePath = $('.download-data-div').find('a').attr('href');
+            var fileName = $('.download-data-div').find('a').attr('download');
+
+            link.setAttribute("href", filePath);
+            link.setAttribute("download", fileName);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }
+      }
+    });
+
+function searchDisease() {
+  // Declare variables
+  var input, filter, select, options, option, i;
+  input = document.getElementById('datasource-search-input');
+  filter = input.value.toString();
+  select = document.getElementById('disease-select-list');
+  options = select.getElementsByTagName('option');
+
+  // Loop through all list items, and hide those who don't match the search query
+  for (i = 0; i < options.length; i++) {
+      option = options[i];
+      if (option.text.search(filter) < 0) {
+        if(safari) {
+          if($(option).parent().is('span')){
+            $(option).parent().css('display','none');
+          } else {
+            $(option).wrap('<span style="display:none;"></span>');
+          }
+          
+        } else {
+          option.style.display = "none";
+        }
+      } else {
+        if(safari) {
+          if($(option).parent().is('span')){
+            $(option).unwrap();
+          } 
+        } else {
+          option.style.display = "";
+        }
+      }
+  }
+}
+function svgToPng(element) {
+  var selected_disease = '';
+  $('#disease-select-list  option:selected').each(function() {
+      selected_disease += $(this).text() + '-';
+  });
+	saveSvgAsPng(d3.select('#'+element).select("svg").node(), 
+  selected_disease + element + '.png');
+}
+function getCSV(url){
+  var arrayData;
+
+  $.ajax({    
+          type:"GET",
+          url:url,    
+          async: false,//set async to false, otherwise it will return "undefined"
+          success:function(csvString){ 
+        arrayData = $.csv.toArrays(csvString, {onParseValue: $.csv.hooks.castToScalar});// transform the CSV string into a 2-dimensional array
+      }
+  });
+
+  return arrayData;
+}
+
+function getDataSource() {
+  // create the chart object and draw it
+  var frequencyChart = new google.visualization.LineChart(document.getElementById('normalized-chart'));
+  var countChart = new google.visualization.LineChart(document.getElementById('count-chart'));
+
+  $(".btn").click(function(){
+      tab = $(this).attr('id');
+      $('.datasource-radio').css('display', 'none');
+      $('.graph').css('display', 'none');
+      $('#datasource-json-container').css('display', 'none');
+      $('#datasource-search-input').val('');
+
+      var countData = { 
+        dataUrl: "synData/"+tab+"DiseaseDataSyn.csv",
+        chartName: tab + " Disease Count",
+        vAxisTitle: "Times By Month", 
+        chartDivId: "count-chart", 
+        tableDivId:"count-table",
+        jsonPreId: "count-json",
+        jsonDivId: "count-json-div"
+      };
+
+      var frequencyData = {
+        dataUrl: "synData/"+tab+"DiseaseNormalizedDataSyn.csv",
+        chartName: tab + " Disease Frequency",
+        vAxisTitle: "Frequency",
+        chartDivId: "normalized-chart",
+        tableDivId:"frequency-table",
+        jsonPreId: "frequency-json",
+        jsonDivId: "frequency-json-div"
+      };
+
+      drawChart(frequencyData, frequencyChart);
+      drawChart(countData, countChart);
+  });
+}
+
+
+function drawChart(dataSource, chart) {
+      $('#disease-select-list').empty();
+
+      // transform the CSV string into a 2-dimensional array
+      var arrayData = getCSV(dataSource.dataUrl);
+      // this new DataTable object holds all the data
+      var data = new google.visualization.arrayToDataTable(arrayData);
+
+	    //start draw disease name table, only 1 column for storing all disease names
+	    var table_title="";
+	    var table_data = new google.visualization.DataTable();
+	    var table_title_array = [];
+	    var table_title_map = {};
+
+	    table_data.addColumn('string', 'Disease Name');
+
+	    for(i=1;i<arrayData[0].length;i++){
+	  	table_title = data.getColumnLabel(i);
+	  	table_title_array.push(table_title);
+	  	table_title_map[table_title.toString()] = i;
+	    }
+
+   	  table_data.addRows(arrayData[0].length-1); 
+   	  for(i=0;i<table_title_array.length;i++){
+   	  	table_data.setCell(i,0,table_title_array[i].toString());
+   	  }
+
+   	  if (document.getElementsByTagName("option").length === 0) {
+   	  	var select = document.getElementById("disease-select-list");
+
+   	  	table_title_array.sort(function(a, b) {
+   	  		if(a < b) return -1;
+   	  		if(a > b) return 1;
+   	  		return 0;
+   	  	});
+
+   	  	_.each(table_title_array, function(title) {
+   	  		title = title.toString();
+   	  		var option = document.createElement("option");
+   	  		option.text = title;
+   		    option.value = table_title_map[title];//column index start from 1
+   	  	  option.id = title;//disease name
+   	  	  select.appendChild(option);
+   	    });
+   	  }
+
+    // set chart options
+    var options = {
+    	title: dataSource.chartName,
+    	width:1050,
+    	height:350,
+    	curveType: 'function',
+    	chartArea: {
+        left: "10%",
+        right: "5%",
+        top: "20%",
+        bottom: "20%",
+        height: "100%",
+        width: "100%"
+      },
+      hAxis: {
+        title: data.getColumnLabel(0), 
+        minValue: data.getColumnRange(0).min, 
+        maxValue: data.getColumnRange(0).max
+      },
+      vAxis: {
+        title: dataSource.vAxisTitle, 
+        minValue: data.getColumnRange(1).min, 
+        maxValue: data.getColumnRange(1).max
+      },
+      legend: 'none'
+    };
+
+ 		$('#disease-select-list').change(function() {//draw chart for multiselected diseases
+        chart.clearChart();//clear chart when you choose a new disease
+        var column_index = [0];//0 means column date
+        $('#chart-div').css('display', 'block');
+        $('#table-div').css('display', 'none');
+
+        $('.datasource-radio').css('display', 'block');
+        $('.datasource-radio').find('#chart').prop('checked', true);
+        $('#datasource-json-container').css('display', 'block');
+
+        if(dataSource.vAxisTitle === "Times By Month") {
+          var updateDataUrl = "synData/"+tab+"DiseaseDataSyn.csv";
+        } else {
+          var updateDataUrl = "synData/"+tab+"DiseaseNormalizedDataSyn.csv";
+        }
+
+        // transform the CSV string into a 2-dimensional array
+        var updateArrayData = getCSV(updateDataUrl);
+        // this new DataTable object holds all the data
+        var updateData = new google.visualization.arrayToDataTable(updateArrayData);
+        // chart view
+        var view = new google.visualization.DataView(updateData);
+        var columns = $(this).val();
+        var selected_disease = '';
+        var viewJson = {};
+        options.title = dataSource.chartName;
+        $('#disease-select-list  option:selected').each(function() {
+          selected_disease += $(this).text() + '/';
+        });
+        options.title += ': ' + selected_disease;
+        for(var i=0;i<$(this).val().length;i++){//length of disease list
+          column_index.push(parseInt(columns[i]));//store all column number in a int array
+        }
+
+        _.each(column_index, function(column_number){
+          if(column_number > 0){
+            var jsonData = {};
+            var disease_name = arrayData[0][column_number]; 
+            arrayData.slice(1).forEach(function(row) {
+              var date = row[0];
+              jsonData[date] = row[column_number];
+            });
+            viewJson[disease_name] = jsonData;
+          }
+        });
+
+        var jsonDataFile = "text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(viewJson));
+        //Specifies which columns are visible in this view.
+        view.setColumns(column_index);  
+        chart.draw(view, options);
+        column_index = [0];
+        $('#' + dataSource.jsonPreId).jsonViewer(viewJson, {collapsed: true, withQuotes: true});
+        $('#' + dataSource.jsonDivId).find('a').attr('href', 'data:' + jsonDataFile);
+        $('#' + dataSource.jsonDivId).find('a').attr('download', dataSource.jsonPreId + '.json'); 
+        $('.overlay').css('display', 'block');
+        $('#datasource-json-container').css('display', 'block');
+        $('.chart').css('overflow-x', 'scroll');
+
+        //table view
+        var table = new google.visualization.Table(document.getElementById(dataSource.tableDivId));
+        table.draw(view, {showRowNumber: true, width: '100%', height: '100%'});
+
+        $('input:radio').on('change', function(){
+          if($('input[name=view]:checked').attr('id') == 'chart') {
+            $('#table-div').css('display', 'none');
+            $('#chart-div').css('display', 'block');
+          } else {
+            $('#chart-div').css('display', 'none');
+            $('#table-div').css('display', 'block');
+          }
+        }); 
+    });
+}
+
+
+   	  
+    
+  </script>

@@ -1,0 +1,532 @@
+  <!DOCTYPE html>
+  <html>
+  <meta charset="utf-8">
+  <head>
+  	<title>Comparison</title>
+  	<link rel="icon" href="images/mu-logo-32-stroked.png"/>
+  	<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+  	<link rel="stylesheet" type="text/css" href="css/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+
+  	<script type="text/javascript" src="js/loader.js"></script>
+    <script type="text/javascript" src="js/jsapi.js"></script>
+    <script type="text/javascript" src="js/jquery-1.12.4.min.js"></script>
+    <script type="text/javascript" src="js/jquery.csv.js"></script>
+    <script type="text/javascript" src="js/underscore.js"></script>
+    <script type="text/javascript" src="js/saveSvgAsPng.js"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/d3.v4.min.js"></script>
+    <script type="text/javascript" src="js/jquery.json-viewer.js"></script>
+  </head>
+
+  <body>
+
+  	<div class="header"></div>
+
+  	<div class="content">
+  		<div class="container-fluid">
+  			<div class="row">
+  				<div class="col-sm-3 col-md-3">
+  					<div class="left-sidebar">  
+  						<p class="hint">Select disease (then choose website checkbox):</p>
+  						<div class="wrapper" id="comparison-wrapper">
+  							<div class="input-group stylish-input-group">
+			                  <input type="text" class="form-control" id="datasource-search-input" placeholder="Search" >
+			                  <span class="input-group-addon">
+			                    <button type="submit">
+			                       <i class="fa fa-search" aria-hidden="true"></i>
+			                    </button>  
+			                  </span>
+			                </div>
+  							<select id="disease-select-list"></select>
+  						</div>
+  					</div>
+  				</div>
+
+  				<div class="col-sm-9 col-md-9">		
+  					<div class="data-checkbox"></div>
+
+  					<div class="datasource-radio" style="margin-left: 23px;">
+		              <label class="radio-inline">
+		                <input type="radio" name="view" id="chart" checked>Chart View 
+		                <i class="fa fa-line-chart" aria-hidden="true"></i>
+		              </label>
+		              <label class="radio-inline">
+		                <input type="radio" name="view" id="table">Table View
+		                <i class="fa fa-table" aria-hidden="true"></i>
+		              </label>
+		            </div>
+
+					<div class="graph" id="chart-div">
+						<div class="chartWithOverlay">
+							<div class="chart" id="comparison-chart"></div>
+							<div class="overlay">
+			                  <div class="download-img-div">
+			                    <button type="button" class="download-img-button" onclick="svgToPng('comparison-chart')">
+			                      <i class="fa fa-picture-o" title="Download Picture" aria-hidden="true"></i>
+			                    </button>
+			                  </div>
+			                </div>
+						</div>
+					</div>
+
+					<div class="graph" id="table-div"  style="height: 530px;">
+		              <div id="comparison-table"></div>
+		            </div>
+
+					<div class="json-viewer" style="max-width: 1050px;">
+						<div class="json-title-download-div">
+	                      <span class="json-title-span">
+	                        <h4>Json Data</h4>
+	                      </span>
+	                      <div class="download-data-div">
+	                        <button type="button" class="download-data-button">
+	                          <a><i class="fa fa-download" title="Download Data" aria-hidden="true"></i></a>
+	                        </button>
+	                      </div>
+	                    </div>
+
+	                    <pre class="json-renderer"></pre>
+	                </div>
+				</div> 
+
+			</div>
+		</div>
+	</div>
+</body>
+<script type="text/javascript" >
+// load the visualization library from Google and set a listener
+google.load("visualization", "1", {packages:["corechart"]});
+// Load the Visualization API and the piechart package.
+google.load('visualization', '1.0', {'packages':['table']});
+
+$(document).ready(function(){
+	$(".header").load("header.html");
+
+	google.setOnLoadCallback(drawChart);
+});
+
+$('#datasource-search-input').on('keyup', function () {
+    searchDisease();
+});
+
+function searchDisease() {
+  // Declare variables
+  var input, filter, select, options, option, i;
+  input = document.getElementById('datasource-search-input');
+  filter = input.value.toString();
+  select = document.getElementById('disease-select-list');
+  options = select.getElementsByTagName('option');
+
+  // Loop through all list items, and hide those who don't match the search query
+  for (i = 0; i < options.length; i++) {
+      option = options[i];
+      if (option.text.search(filter) < 0) {
+      	if(safari) {
+      		if($(option).parent().is('span')){
+      			$(option).parent().css('display','none');
+      		} else {
+      			$(option).wrap('<span style="display:none;"></span>');
+      		}
+      		
+      	} else {
+      		option.style.display = "none";
+      	}
+      } else {
+      	if(safari) {
+      		if($(option).parent().is('span')){
+      			$(option).unwrap();
+      		} 
+      	} else {
+      		option.style.display = "";
+      	}
+      }
+  }
+}
+	
+
+function getCSV(url){
+	var arrayData;
+
+	$.ajax({    
+		type:"GET",
+		url:url,    
+        async: false,//set async to false, otherwise it will return "undefined"
+        success:function(csvString){ 
+			arrayData = $.csv.toArrays(csvString, {onParseValue: $.csv.hooks.castToScalar});// transform the CSV string into a 2-dimensional array
+		}
+	});
+
+	return arrayData;
+}
+
+function getTextFile(url){
+	var arrayData;
+
+	$.ajax({    
+		type:"GET",
+		url:url,    
+        async: false,//set async to false, otherwise it will return "undefined"
+        success:function(data){ 
+        	arrayData = data.split(",");
+        }
+    });
+
+	return arrayData;
+}
+
+function svgToPng(element) {
+	saveSvgAsPng(d3.select('#'+element).select("svg").node(), 
+    $("#disease-select-list :selected").text() + '-' + element + '.png');
+}
+
+function drawChart(){
+	var allDiseaseNames = getTextFile("synData/allDiseaseNames.txt");
+	var Aljaarray = getCSV("synData/AljazeeraDiseaseNormalizedDataSyn.csv");
+	var BBCarray = getCSV("synData/BBCDiseaseNormalizedDataSyn.csv");
+	var Beastarray = getCSV("synData/BeastDiseaseNormalizedDataSyn.csv");
+	var CNNarray = getCSV("synData/CNNDiseaseNormalizedDataSyn.csv");
+	var Foxarray = getCSV("synData/FoxDiseaseNormalizedDataSyn.csv");
+	var Reutersarray = getCSV("synData/ReutersDiseaseNormalizedDataSyn.csv");
+	var Telegrapharray = getCSV("synData/TelegraphDiseaseNormalizedDataSyn.csv");
+
+	var select = document.getElementById("disease-select-list");
+	select.size = allDiseaseNames.length;
+	var allDiseaseNames_map = {};
+
+	for(var i=0;i<allDiseaseNames.length;i++){
+		allDiseaseNames_map[allDiseaseNames[i]] = i+1;
+	}
+
+	allDiseaseNames.sort(function(a, b) {
+		if(a < b) return -1;
+		if(a > b) return 1;
+		return 0;
+	});
+
+	_.each(allDiseaseNames, function(disease_name) {
+		disease_name = disease_name.toString();
+		var option = document.createElement("option");
+		option.text = disease_name;
+	   		option.value = allDiseaseNames_map[disease_name];//column index start from 1
+	   	  	option.id = disease_name;//disease name
+	   	  	select.appendChild(option);
+	   	  });
+
+	var chart = new google.visualization.LineChart(document.getElementById('comparison-chart'));
+
+	$('#disease-select-list').change(function() {//just draw line chart of one disease
+		chart.clearChart();//clear chart when you choose a new disease
+		$('.data-checkbox').empty();
+	    $('#table-div').css('display', 'none');
+	    $('.json-viewer').css('display', 'none');
+	    $('.datasource-radio').css('display', 'none');
+
+		var AljazeeraCheckbox = false;
+		var BBCCheckbox = false;
+		var BeastCheckbox = false;
+		var CNNCheckbox = false;
+		var FoxCheckbox = false;
+		var ReutersCheckbox = false;
+		var TelegraphCheckbox = false;
+		$('input[type=checkbox]').attr('checked',false);//reset all checkbox
+		
+		//it directly returns to me the selected option represented object id--disease name
+		var selected_object_id = $(this).find('option:selected').attr('id');
+		// Save data show in chart for a disease. It will be used to transfer json data.
+		var viewJson = {}; //viewJson.diseaseName.dataSet.date = value;
+		viewJson[selected_object_id] = {};
+		
+		var disease_data = new google.visualization.DataTable(document.getElementById('table-div'));
+		disease_data.addColumn('string', 'Date');
+		disease_data.addColumn('number', 'Aljazeera');
+		disease_data.addColumn('number', 'BBC');
+		disease_data.addColumn('number', 'Beast');
+		disease_data.addColumn('number', 'CNN');
+		disease_data.addColumn('number', 'Fox');
+		disease_data.addColumn('number', 'Reuters');
+		disease_data.addColumn('number', 'Telegraph');
+		disease_data.addColumn('number', 'Total');
+		disease_data.addRows(Foxarray.length - 1);
+
+		for(var j=0;j<Foxarray.length-1;j++){ //set date
+			disease_data.setCell(j,0,Foxarray[j+1][0]);//set date the 0th column
+		}	
+
+		var totalAljazeera = [];
+		var AljazeeraDateValue = {};
+		for(var i=1;i<Aljaarray[0].length;i++){ //i start from 1 for skipping "data"(i=0)
+	  		if(selected_object_id==Aljaarray[0][i]){//match disease name
+	  			AljazeeraCheckbox = true;
+	  			for(var j=0;j<Aljaarray.length-1;j++){ 
+					totalAljazeera[j] = Aljaarray[j+1][i];
+					AljazeeraDateValue[Aljaarray[j+1][0]] = Aljaarray[j+1][i];
+				} 
+
+				var rowIndex = 0;
+				Foxarray.slice(1).forEach(function(row) {
+					if(AljazeeraDateValue[row[0]] !== undefined ) {
+						disease_data.setCell(rowIndex,1,AljazeeraDateValue[row[0]]);//set count 1 column
+	  				} else {
+	  					disease_data.setCell(rowIndex,1,0);
+	  				}
+	  				rowIndex++;
+				});	
+				break;   
+			}
+		}
+
+		var totalBBC = [];
+		var BBCDateValue = {};
+		for(var i=1;i<BBCarray[0].length;i++){ //i start from 1 for skipping "data"(i=0)
+	  		if(selected_object_id==BBCarray[0][i]){//match disease name
+	  			BBCCheckbox = true;
+	  			for(var j=0;j<BBCarray.length-1;j++){ 		
+					totalBBC[j] = BBCarray[j+1][i];
+					BBCDateValue[BBCarray[j+1][0]] = BBCarray[j+1][i];
+				}	
+				var rowIndex = 0;
+				Foxarray.slice(1).forEach(function(row) {
+					if(BBCDateValue[row[0]] !== undefined ) {
+						disease_data.setCell(rowIndex,2,BBCDateValue[row[0]]);//set count 2 column
+	  				} else {
+	  					disease_data.setCell(rowIndex,2,0);
+	  				}
+	  				rowIndex++;
+				});		
+				break;		        
+			}
+		}
+
+		var totalBeast = [];
+		var BeastDateValue = {};
+		for(var i=1;i<Beastarray[0].length;i++){ //i start from 1 for skipping "data"(i=0)
+	  		if(selected_object_id==Beastarray[0][i]){//match disease name
+	  			BeastCheckbox = true;
+	  			for(j=0;j<Beastarray.length-1;j++){ 
+					totalBeast[j] = Beastarray[j+1][i];
+					BeastDateValue[Beastarray[j+1][0]] = Beastarray[j+1][i];
+				}
+				var rowIndex = 0;
+				Foxarray.slice(1).forEach(function(row) {
+					if(BeastDateValue[row[0]] !== undefined ) {
+						disease_data.setCell(rowIndex,3,BeastDateValue[row[0]]);//set count 3 column
+	  				} else {
+	  					disease_data.setCell(rowIndex,3,0);
+	  				}
+	  				rowIndex++;
+				});			
+				break;        
+			}
+		}
+
+		var totalCNN = [];
+		var CNNDateValue = {};
+	  	for(var i=1;i<CNNarray[0].length;i++){ //i start from 1 for skipping "data"(i=0)
+	  		if(selected_object_id==CNNarray[0][i]){//match disease name
+	  			CNNCheckbox = true;
+	  			for(j=0;j<CNNarray.length-1;j++){ 
+					totalCNN[j] = CNNarray[j+1][i];
+					CNNDateValue[CNNarray[j+1][0]] = CNNarray[j+1][i];
+				}
+				var rowIndex = 0;
+				Foxarray.slice(1).forEach(function(row) {
+					if(CNNDateValue[row[0]] !== undefined ) {
+						disease_data.setCell(rowIndex,4,CNNDateValue[row[0]]);//set count 4 column
+	  				} else {
+	  					disease_data.setCell(rowIndex,4,0);
+	  				}
+	  				rowIndex++;
+				});
+				break;	        
+			}
+		}
+
+		var totalFox = [];
+		var FoxDateValue = {};
+	    for(var i=1;i<Foxarray[0].length;i++){ //i start from 1 for skipping "data"(i=0)
+	  		if(selected_object_id==Foxarray[0][i]){//match disease name
+	  			FoxCheckbox = true;
+	  			for(j=0;j<Foxarray.length-1;j++){ 
+					disease_data.setCell(j,5,Foxarray[j+1][i]);//set count the 5th column	
+					totalFox[j] = Foxarray[j+1][i];
+					FoxDateValue[Foxarray[j+1][0]] = Foxarray[j+1][i];
+				}	 					 
+				break;       
+			}
+		}
+
+		var totalReuters = [];
+		var ReutersDateValue = {};
+	    for(var i=1;i<Reutersarray[0].length;i++){ //i start from 1 for skipping "data"(i=0)
+	  		if(selected_object_id==Reutersarray[0][i]){//match disease name
+	  			ReutersCheckbox = true;
+	  			for(j=0;j<Reutersarray.length-1;j++){ 	
+					totalReuters[j] = Reutersarray[j+1][i];
+					ReutersDateValue[Reutersarray[j+1][0]] = Reutersarray[j+1][i];
+				}	
+				var rowIndex = 0;
+				Foxarray.slice(1).forEach(function(row) {
+					if(ReutersDateValue[row[0]] !== undefined ) {
+						disease_data.setCell(rowIndex,6,ReutersDateValue[row[0]]);//set count 6 column
+	  				} else {
+	  					disease_data.setCell(rowIndex,6,0);
+	  				}
+	  				rowIndex++;
+				});	 
+				break;        
+			}
+		}
+
+		var totalTelegraph = [];
+		var TelegraphDateValue = {};
+	  	for(var i=1;i<Telegrapharray[0].length;i++){ //i start from 1 for skipping "data"(i=0)
+	  		if(selected_object_id==Telegrapharray[0][i]){//match disease name
+	  			TelegraphCheckbox = true;
+	  			for(j=0;j<Telegrapharray.length-1;j++){ 
+					totalTelegraph[j] = Telegrapharray[j+1][i];
+					TelegraphDateValue[Telegrapharray[j+1][0]] = Telegrapharray[j+1][i];
+				}
+				var rowIndex = 0;
+				Foxarray.slice(1).forEach(function(row) {
+					if(TelegraphDateValue[row[0]] !== undefined ) {
+						disease_data.setCell(rowIndex,7,TelegraphDateValue[row[0]]);//set count 7 column
+	  				} else {
+	  					disease_data.setCell(rowIndex,7,0);
+	  				}
+	  				rowIndex++;
+				});	 
+				break;	        
+			}
+		}
+
+		var total = [];
+		var TotalDateValue = {};
+		var totalDate = '';
+		for(var i=0;i<Foxarray.length - 1;i++){// generate the 8th column total column
+			totalDate = Foxarray[i+1][0];
+	  		total[i]= parseFloat(AljazeeraDateValue[totalDate] || 0)+parseFloat(BBCDateValue[totalDate] || 0)+parseFloat(BeastDateValue[totalDate] || 0)+parseFloat(CNNDateValue[totalDate] || 0)+parseFloat(FoxDateValue[totalDate] || 0)+parseFloat(ReutersDateValue[totalDate] || 0)+parseFloat(TelegraphDateValue[totalDate] || 0);
+		  	disease_data.setCell(i,8,total[i]);//set count 8 column
+		  	if (i + 1 < Foxarray.length) {
+		  		TotalDateValue[Foxarray[i+1][0]] = total[i];
+		  	}	
+		}
+
+		if (AljazeeraCheckbox) {
+			$('.data-checkbox').append('<label class="checkbox-inline"><input type="checkbox" class="datacheck" id="1" value="Aljazeera" >Aljazeera</label>');
+			viewJson[selected_object_id]['Aljazeera'] = AljazeeraDateValue;
+		}
+		if (BBCCheckbox) {
+			$('.data-checkbox').append('<label class="checkbox-inline"><input type="checkbox" class="datacheck" id="2" value="BBC" >BBC</label>');
+			viewJson[selected_object_id]['BBC'] = BBCDateValue;
+		}
+		if (BeastCheckbox) {
+			$('.data-checkbox').append('<label class="checkbox-inline"><input type="checkbox" class="datacheck" id="3" value="Beast">Beast</label>');
+			viewJson[selected_object_id]['Beast'] = BeastDateValue;
+		}
+		if (CNNCheckbox) {
+			$('.data-checkbox').append('<label class="checkbox-inline"><input type="checkbox" class="datacheck" id="4" value="CNN" >CNN</label>');
+			viewJson[selected_object_id]['CNN'] = CNNDateValue;
+		}
+		if (FoxCheckbox) {
+			$('.data-checkbox').append('<label class="checkbox-inline"><input type="checkbox" class="datacheck" id="5" value="Fox" >Fox</label>');
+			viewJson[selected_object_id]['Fox'] = FoxDateValue;
+		}
+		if (ReutersCheckbox) {
+			$('.data-checkbox').append('<label class="checkbox-inline"><input type="checkbox" class="datacheck" id="6" value="Reuters" >Reuters</label>');
+			viewJson[selected_object_id]['Reuters'] = ReutersDateValue;
+		}
+		if (TelegraphCheckbox) {
+			$('.data-checkbox').append('<label class="checkbox-inline"><input type="checkbox" class="datacheck" id="7" value="Telegraph" >Telegraph</label>');
+			viewJson[selected_object_id]['Telegraph'] = TelegraphDateValue;
+		}
+
+		$('.data-checkbox').append('<label class="checkbox-inline"><input type="checkbox" class="datacheck" id="8" value="Total" >Total</label>');
+		viewJson[selected_object_id]['Total'] = TotalDateValue;
+
+		var options = {
+			title: selected_object_id + ' Comparison',
+			width:1550,
+			height:530,
+			chartArea: {
+	           left: "10%",
+	           right: "5%",
+	           top: "20%",
+	           bottom: "20%",
+	           height: "100%",
+	           width: "100%"
+	         },
+			curveType: 'function',
+			bar: {groupWidth: 10},
+			legend: { position: 'bottom' }
+		};
+
+
+		$('.datacheck').click(function(){ 
+			var view = new google.visualization.DataView(disease_data);
+			var column_index = [0];
+			$('.datasource-radio').css('display', 'block');
+			$('.datasource-radio').find('#chart').prop('checked', true);
+	    	$('#table-div').css('display', 'none');
+	        $('#chart-div').css('display', 'block');
+
+	    	$('.json-viewer').css('display', 'block');
+
+			$('.datacheck').each(function(){ 
+				if(this.checked == true){
+					column_index.push(parseInt(this.id));
+			   	}
+			});
+			
+			var jsonDataFile = "text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(viewJson));
+			$('.json-renderer').jsonViewer(viewJson, {collapsed: true, withQuotes: true});
+			$('.json-viewer').find('a').attr('href', 'data:' + jsonDataFile);
+          	$('.json-viewer').find('a').attr('download', selected_object_id + '-comparison.json'); 
+          	$('.json-viewer').css('display', 'block');
+
+			view.setColumns(column_index);
+			chart.draw(view, options);
+			$('.graph').css('overflow-x', 'scroll');
+			$('.overlay').css('display', 'block');
+			$('.chart').css('overflow-x', 'scroll');
+
+
+			//table view
+	        var table = new google.visualization.Table(document.getElementById('table-div'));
+	        table.draw(view, {showRowNumber: true, width: '100%', height: '100%'});
+
+	        $('input:radio').on('change', function(){
+	          if($('input[name=view]:checked').attr('id') == 'chart') {
+	            $('#table-div').css('display', 'none');
+	            $('#chart-div').css('display', 'block');
+	          } else {
+	            $('#chart-div').css('display', 'none');
+	            $('#table-div').css('display', 'block');
+	          }
+	        });
+		}); 
+
+		$('.download-data-button').click(function(){
+			if (firefox) {
+				var link = document.createElement("a");
+
+			    if (link.download !== undefined) { // feature detection
+			        // Browsers that support HTML5 download attribute
+			        var filePath = $('.download-data-div').find('a').attr('href');
+			        var fileName = $('.download-data-div').find('a').attr('download');
+
+			        link.setAttribute("href", filePath);
+			        link.setAttribute("download", fileName);
+					document.body.appendChild(link);
+					link.click();
+					document.body.removeChild(link);
+				}
+			}
+		});
+
+	});
+
+}
+
+</script>
+</html>
